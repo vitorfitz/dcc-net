@@ -1,14 +1,14 @@
 import struct
 import socket
 
-HEADER_SIZE = 6
+HEADER_SIZE = 7
 SYNC_STRING = 2 * bytearray((0xDCC023C2).to_bytes(4, byteorder="big"))
 SYNC_SIZE = len(SYNC_STRING)
 MAX_FRAME_SIZE = 2 ** 16
 
 
 def get_ip_type(hostname, port_):
-	addr = socket.getaddrinfo(hostname, port_, 0, 0, socket.SOL_UDP)[0][4][0]
+	addr = socket.getaddrinfo(hostname, port_, 0, 0, socket.SOL_SOCKET)[0][4][0]
 	try:
 		socket.inet_pton(socket.AF_INET6, addr)
 		return socket.AF_INET6
@@ -48,10 +48,10 @@ def calculate_checksum(data):
 
 def write_frame(data, id_, is_last):
 	flags = (len(data) == 0) << 7 | is_last << 6
-	header = bytearray(struct.pack(">IIHHBB", 0xDCC023C2, 0xDCC023C2, 0, len(data), id_, flags))
+	header = bytearray(struct.pack(">IIHHHB", 0xDCC023C2, 0xDCC023C2, 0, len(data), id_, flags))
 	frame = header + data
 	# print(list(frame[8:]))
-	checksum = calculate_checksum(frame[SYNC_SIZE:])
+	checksum = calculate_checksum(frame)
 	frame[SYNC_SIZE:SYNC_SIZE + 2] = checksum.to_bytes(2, byteorder="big")
 	return frame, checksum
 
@@ -80,7 +80,7 @@ def read_frame(conn: socket.socket):
 		if not header or len(header) != HEADER_SIZE:
 			return None
 
-		unpacked = struct.unpack(">HHBB", header)
+		unpacked = struct.unpack(">HHHB", header)
 		expected_check = unpacked[0]
 		size = unpacked[1]
 
@@ -88,8 +88,8 @@ def read_frame(conn: socket.socket):
 		if len(data) != size:
 			continue
 
-		frame = header + data
-		frame[:2] = (0).to_bytes(2, byteorder="big")
+		frame = SYNC_STRING + header + data
+		frame[8:10] = (0).to_bytes(2, byteorder="big")
 		checksum = calculate_checksum(frame)
 		if checksum != expected_check:
 			continue
@@ -106,6 +106,6 @@ def frame_to_ascii(bytes_data: bytes):
 		line += '\n'
 
 	if str_data.endswith('\n'):
-		lines[-1] = lines[-1][:len(lines[-1])-1]
+		lines[-1] = lines[-1][:len(lines[-1]) - 1]
 
 	return lines
