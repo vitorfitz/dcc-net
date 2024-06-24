@@ -51,8 +51,11 @@ try:
         is_reset = bool((unpack[3] & 0x20) >> 5)
 
         if is_ack:
-            id_ = not id_
+            id_ = int(not bool(id_))
             continue
+
+        ack_frame, _ = write_frame(bytearray("".encode("ASCII")), int(not bool(id_)), False)
+        s.sendall(ack_frame)
 
         if is_reset:
             print("Reseting")

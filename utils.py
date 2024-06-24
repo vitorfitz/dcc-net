@@ -50,7 +50,6 @@ def write_frame(data, id_, is_last):
 	flags = (len(data) == 0) << 7 | is_last << 6
 	header = bytearray(struct.pack(">IIHHHB", 0xDCC023C2, 0xDCC023C2, 0, len(data), id_, flags))
 	frame = header + data
-	# print(list(frame[8:]))
 	checksum = calculate_checksum(frame)
 	frame[SYNC_SIZE:SYNC_SIZE + 2] = checksum.to_bytes(2, byteorder="big")
 	return frame, checksum
