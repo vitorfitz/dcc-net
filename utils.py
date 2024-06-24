@@ -119,7 +119,7 @@ def make_frame(data: str, id_: int, flags: int) -> bytearray:
 	if len(data) >= MAX_FRAME_SIZE:
 		print("Maximum frame size is 65535")
 		exit(-1)
-    
+	
 	data_bytes = data.encode("ASCII")
 
 	msg = bytearray(struct.pack("!IIHHHB", SYNC_SEQUENCE, SYNC_SEQUENCE, 0, len(data_bytes), id_, flags))
@@ -166,9 +166,9 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
 				attemps += 1
 				continue
 
-			if id_ != received_id:
-				attemps += 1
-				continue
+			# if id_ != received_id:
+			# 	attemps += 1
+			# 	continue
 
 			if ACK_FLAG & flags != ACK_FLAG:
 				attemps += 1
@@ -181,3 +181,43 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
 			attemps += 1
 
 	print("failed to send message id: ", id_)
+
+def recv_frame(conn: socket.socket) -> bytes:
+	attempt = 0
+	
+	while attempt < 16:
+		try:
+			frame_received = conn.recv(SYNC_SIZE+HEADER_SIZE)
+			
+			sync0, sync1, expected_check, length, received_id, flags = struct.unpack("!IIHHHB", frame_received)
+
+			if SYNC_SEQUENCE != sync0 or SYNC_SEQUENCE != sync1:
+				raise Exception("Synchronization sequence not found")
+
+			data = conn.recv(length)
+
+			tmp_frame = bytearray(frame_received+data)
+			tmp_frame[SYNC_SIZE:SYNC_SIZE+2] = (0).to_bytes(2, 'big')
+
+			check = calculate_checksum(tmp_frame)
+	
+			if check != expected_check:
+				raise Exception("Checksum does not match")
+
+			ack_frame = make_frame("", received_id, ACK_FLAG)
+			send_frame(ack_frame)
+   
+			is_ack = False
+			is_end = False
+			is_rst = False
+   
+			if (flags & ACK_FLAG) >> 7: is_ack = True
+			if (flags & END_FLAG) >> 6: is_end = True
+			if (flags & RST_FLAG) >> 5: is_rst = True
+
+			return data, is_ack, is_end, is_rst
+
+		except:
+			attempt+=1
+   
+	return None, False, False, False

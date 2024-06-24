@@ -1,0 +1,16 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "md5",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "dccnet-md5.py",
+            "console": "integratedTerminal",
+            "args": "rubick.snes.2advanced.dev:51557 2021031955:10:ad27bd8ff4612337b5a33065f08b6289d8f69abe429f823ab48d9aefede6a377+2021031793:10:21db83daa2c1effb89f57e179531dc8803ca02f71d3bcdcc87d72cc5f0877b3d+2021031858:10:a6b66153cca82d2f022d18066b8b49168b2b41857b90845d5c9e3938a2c950ba+873f73c5241eeaf85f69fd798008006a5e42403aedb112e3458109e8b9148e81"
+        }
+    ]
+}

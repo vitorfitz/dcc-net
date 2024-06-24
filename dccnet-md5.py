@@ -25,4 +25,31 @@ print(f"sending GAS on frame:\t{frame}")
 
 send_frame(s, frame, 0)
 
+run = True
+buff = ""
+current_id = 1
+while run:
+    data, is_ack, is_end, is_rst = recv_frame(s)
+    
+    if is_ack: continue
+    if is_end: run = False
+    if is_rst: break
+
+    if data == None:
+        print(is_ack, is_end, is_rst)
+        continue
+    
+    lines = frame_to_ascii(data)
+    
+    for line in lines:
+        l = buff + line
+        
+        is_end = int(line==lines[-1]) * END_FLAG
+        
+        current_id += 1
+        
+        frame = make_frame(l, current_id, is_end)
+        
+        send_frame(socket, frame, current_id)
+
 s.close()
