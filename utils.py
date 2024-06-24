@@ -2,9 +2,14 @@ import struct
 import socket
 
 HEADER_SIZE = 7
-SYNC_STRING = 2 * bytearray((0xDCC023C2).to_bytes(4, byteorder="big"))
+SYNC_SEQUENCE = 0xDCC023C2
+SYNC_STRING = 2 * bytearray(SYNC_SEQUENCE.to_bytes(4, byteorder="big"))
 SYNC_SIZE = len(SYNC_STRING)
 MAX_FRAME_SIZE = 2 ** 16
+
+ACK_FLAG = 0x80
+END_FLAG = 0x40
+RESET_FLAG = 0x20
 
 
 def get_ip_type(hostname, port_):
@@ -46,9 +51,9 @@ def calculate_checksum(data):
 	return checksum
 
 
-def write_frame(data, id_, is_last):
+def write_frame(data: bytes, id_: int, is_last: bool):
 	flags = (len(data) == 0) << 7 | is_last << 6
-	header = bytearray(struct.pack(">IIHHHB", 0xDCC023C2, 0xDCC023C2, 0, len(data), id_, flags))
+	header = bytearray(struct.pack("!IIHHHB", 0xDCC023C2, 0xDCC023C2, 0, len(data), id_, flags))
 	frame = header + data
 	checksum = calculate_checksum(frame)
 	frame[SYNC_SIZE:SYNC_SIZE + 2] = checksum.to_bytes(2, byteorder="big")
@@ -79,7 +84,7 @@ def read_frame(conn: socket.socket):
 		if not header or len(header) != HEADER_SIZE:
 			return None
 
-		unpacked = struct.unpack(">HHHB", header)
+		unpacked = struct.unpack("!HHHB", header)
 		expected_check = unpacked[0]
 		size = unpacked[1]
 
@@ -108,3 +113,56 @@ def frame_to_ascii(bytes_data: bytes):
 		lines[-1] = lines[-1][:len(lines[-1]) - 1]
 
 	return lines
+
+
+def make_frame(data: str, id_: int, flags: int) -> bytearray:
+	data_bytes = data.encode("ASCII")
+
+	msg = bytearray(struct.pack("!IIHHHB", SYNC_SEQUENCE, SYNC_SEQUENCE, 0, len(data_bytes), id_, flags))
+
+	checksum = calculate_checksum(msg)
+	msg[SYNC_SIZE:SYNC_SIZE+2] = checksum.to_bytes(2, byteorder='big')
+
+	return msg
+
+
+def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
+	attemps = 0
+
+	while attemps < 60:
+		try:
+			conn.sendall(frame)
+			frame_received = conn.recv(SYNC_SIZE+HEADER_SIZE)
+
+			sync0, sync1, expected_check, length, received_id, flags = struct.unpack("!IIHHHB", frame_received)
+
+			if SYNC_SEQUENCE != sync0 or SYNC_SEQUENCE != sync1:
+				attemps += 1
+				continue
+
+			header = sync0+sync1+expected_check+length+received_id+flags
+
+			data = conn.recv(length)
+
+			tmp_frame = header+data
+
+			check = calculate_checksum(tmp_frame)
+			if check != expected_check:
+				attemps += 1
+				continue
+
+			if id_ != received_id:
+				attemps += 1
+				continue
+
+			if ACK_FLAG & flags != ACK_FLAG:
+				attemps += 1
+				continue
+
+			print("received ack for id: ", id_)
+			return None
+
+		except socket.timeout:
+			attemps += 1
+
+	print("failed to send message id: ", id_)
