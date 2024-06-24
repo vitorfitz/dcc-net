@@ -9,7 +9,7 @@ MAX_FRAME_SIZE = 2 ** 16
 
 ACK_FLAG = 0x80
 END_FLAG = 0x40
-RESET_FLAG = 0x20
+RST_FLAG = 0x20
 
 
 def get_ip_type(hostname, port_):
@@ -116,6 +116,10 @@ def frame_to_ascii(bytes_data: bytes):
 
 
 def make_frame(data: str, id_: int, flags: int) -> bytearray:
+	if len(data) >= MAX_FRAME_SIZE:
+		print("Maximum frame size is 65535")
+		exit(-1)
+    
 	data_bytes = data.encode("ASCII")
 
 	msg = bytearray(struct.pack("!IIHHHB", SYNC_SEQUENCE, SYNC_SEQUENCE, 0, len(data_bytes), id_, flags))
@@ -129,7 +133,7 @@ def make_frame(data: str, id_: int, flags: int) -> bytearray:
 def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
 	attemps = 0
 
-	while attemps < 60:
+	while attemps < 16:
 		try:
 			conn.sendall(frame)
 			frame_received = conn.recv(SYNC_SIZE+HEADER_SIZE)
@@ -140,13 +144,22 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
 				attemps += 1
 				continue
 
-			header = sync0+sync1+expected_check+length+received_id+flags
-
 			data = conn.recv(length)
 
-			tmp_frame = header+data
+			tmp_frame = bytearray(frame_received+data)
+			tmp_frame[SYNC_SIZE:SYNC_SIZE+2] = (0).to_bytes(2, 'big')
 
 			check = calculate_checksum(tmp_frame)
+   
+			print(f"checksum\t|{check} == {expected_check}")
+			print(f"flags", end="\t\t|")
+			if (flags & ACK_FLAG) >> 7: print(f"ACK", end="\t")
+			if (flags & END_FLAG) >> 6: print(f"END", end="\t")
+			if (flags & RST_FLAG) >> 5: print(f"RST", end="\t")
+			print()
+   
+			print(f"data\t\t|{data.decode('ASCII')}")
+   
 			if check != expected_check:
 				attemps += 1
 				continue

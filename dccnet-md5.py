@@ -14,13 +14,14 @@ s = socket.socket(get_ip_type(addr_str[0], addr_str[1]), socket.SOCK_STREAM)
 
 s.settimeout(1)
 s.connect((addr_str[0], int(addr_str[1])))
+
+print(f"connecting to address {addr_str[0]}:{addr_str[1]}")
+
 msg = arg_gas + '\n'
 
-if len(msg) >= MAX_FRAME_SIZE:
-    print("Maximum frame size is 65535")
-    exit(-1)
-
 frame = make_frame(msg, 0, 0)
+
+print(f"sending GAS on frame:\t{frame}")
 
 send_frame(s, frame, 0)
 
