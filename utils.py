@@ -123,6 +123,8 @@ def make_frame(data: str, id_: int, flags: int) -> bytearray:
 	data_bytes = data.encode("ASCII")
 
 	msg = bytearray(struct.pack("!IIHHHB", SYNC_SEQUENCE, SYNC_SEQUENCE, 0, len(data_bytes), id_, flags))
+ 
+	msg += data_bytes
 
 	checksum = calculate_checksum(msg)
 	msg[SYNC_SIZE:SYNC_SIZE+2] = checksum.to_bytes(2, byteorder='big')
