@@ -51,8 +51,7 @@ while run:
 
     lines = frame_to_ascii(data)
 
-    send_lock = Lock()
-    ths = []
+    ths: List[Thread] = []
     for line in lines:
         l = buff + line
 
@@ -60,9 +59,12 @@ while run:
 
         frame = make_frame(l, current_id, is_end)
         
-        ths.append(Thread(target=send_frame_wrapper, args=(s, frame, [current_id], [send_lock], last_sent)))
+        ths.append(Thread(target=send_frame_wrapper, args=(s, frame, [current_id], last_sent)))
 
     for th in ths:
         th.start()
+        
+    for th in ths:
+        th.join()
 
 s.close()

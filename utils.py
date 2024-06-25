@@ -175,6 +175,9 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 			if RST_FLAG & flags == RST_FLAG:
 				return RST_FLAG
 
+			if received_id == id_:
+				time.sleep(1)
+
 			if ACK_FLAG & flags == ACK_FLAG:
 				return ACK_FLAG
 
@@ -219,9 +222,7 @@ def recv_frame(conn: socket.socket) -> bytes:
 	except:
 		return None, False, False, False
 
-def send_frame_wrapper(s: socket.socket , frame: bytes, current_id: List[int] ,send_lock: List[Lock], last_sent: Tuple[bytes, int]):
-    send_lock[0].acquire()
+def send_frame_wrapper(s: socket.socket , frame: bytes, current_id: List[int] , last_sent: Tuple[bytes, int]):
     send_frame(s, frame, current_id[0])
-    send_lock[0].release()
-    last_sent=[frame, current_id]
+    last_sent = (frame, current_id)
     current_id[0] = int(not(bool(current_id[0])))
