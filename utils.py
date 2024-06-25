@@ -1,5 +1,6 @@
 import struct
 import socket
+import time
 
 HEADER_SIZE = 7
 SYNC_SEQUENCE = 0xDCC023C2
@@ -163,16 +164,13 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
 			print(f"data\t\t|{data.decode('ASCII')}")
    
 			if check != expected_check:
-				attemps += 1
-				continue
+				time.sleep(1)
 
-			# if id_ != received_id:
-			# 	attemps += 1
-			# 	continue
+			if id_ != received_id:
+				time.sleep(1)
 
 			if ACK_FLAG & flags != ACK_FLAG:
-				attemps += 1
-				continue
+				time.sleep(1)
 
 			print("received ack for id: ", id_)
 			return None
