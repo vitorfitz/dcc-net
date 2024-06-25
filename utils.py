@@ -135,12 +135,13 @@ def make_frame(data: str, id_: int, flags: int) -> bytearray:
 	return msg
 
 
-def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
+def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 	attemps = 0
 
 	while attemps < 16:
 		try:
 			conn.sendall(frame)
+
 			frame_received = conn.recv(SYNC_SIZE+HEADER_SIZE)
 
 			sync0, sync1, expected_check, length, received_id, flags = struct.unpack("!IIHHHB", frame_received)
@@ -168,19 +169,20 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> None:
 			if check != expected_check:
 				time.sleep(1)
 
-			if id_ != received_id:
-				time.sleep(1)
+			if END_FLAG & flags == END_FLAG:
+				return END_FLAG
 
-			if ACK_FLAG & flags != ACK_FLAG:
-				time.sleep(1)
+			if RST_FLAG & flags == RST_FLAG:
+				return RST_FLAG
 
-			print("received ack for id: ", id_)
-			return None
+			if ACK_FLAG & flags == ACK_FLAG:
+				return ACK_FLAG
 
 		except socket.timeout:
 			attemps += 1
 
 	print("failed to send message id: ", id_)
+	return 0
 
 def recv_frame(conn: socket.socket) -> bytes:
 	try:
@@ -202,7 +204,7 @@ def recv_frame(conn: socket.socket) -> bytes:
 			raise Exception("Checksum does not match")
 
 		ack_frame = make_frame("", received_id, ACK_FLAG)
-		send_frame(ack_frame)
+		conn.sendall(ack_frame)
 
 		is_ack = False
 		is_end = False

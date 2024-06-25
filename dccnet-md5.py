@@ -24,7 +24,14 @@ frame = make_frame(msg, 0, 0)
 
 print(f"sending GAS on frame:\t{frame}")
 
-send_frame(s, frame, 0)
+res = send_frame(s, frame, 0)
+if res == RST_FLAG:
+    print("received RST")
+    exit(-1)
+
+if res == END_FLAG:
+    print("received END")
+    exit(-1)
 
 last_sent = (None, None)
 
@@ -50,8 +57,6 @@ while run:
         l = buff + line
 
         is_end = int(line==lines[-1]) * END_FLAG
-
-        current_id += 1
 
         frame = make_frame(l, current_id, is_end)
         
