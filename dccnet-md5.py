@@ -26,21 +26,21 @@ print(f"sending GAS on frame:\t{frame}")
 
 send_frame(s, frame, 0)
 
-last_sent = [None, None]
+last_sent = (None, None)
 
 run = True
 buff = ""
 current_id = 1
 while run:
     data, is_ack, is_end, is_rst = recv_frame(s)
+    
+    if data == None:
+        print(is_ack, is_end, is_rst)
+        continue
 
     if is_ack: continue
     if is_end: run = False
     if is_rst: break
-
-    if data == None:
-        print(is_ack, is_end, is_rst)
-        continue
 
     lines = frame_to_ascii(data)
 
@@ -54,9 +54,8 @@ while run:
         current_id += 1
 
         frame = make_frame(l, current_id, is_end)
-        last_sent = [frame, current_id]
-
-        ths.append(Thread(target=(lambda: {send_lock.acquire(),send_frame(s, frame, current_id),send_lock.release()})))
+        
+        ths.append(Thread(target=send_frame_wrapper, args=(s, frame, [current_id], [send_lock], last_sent)))
 
     for th in ths:
         th.start()
