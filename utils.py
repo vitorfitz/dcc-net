@@ -1,8 +1,7 @@
 import struct
 import socket
-from threading import Lock
 import time
-from typing import Tuple, List
+from typing import List
 
 HEADER_SIZE = 7
 SYNC_SEQUENCE = 0xDCC023C2
@@ -222,7 +221,7 @@ def recv_frame(conn: socket.socket) -> bytes:
 	except:
 		return None, False, False, False
 
-def send_frame_wrapper(s: socket.socket , frame: bytes, current_id: List[int] , last_sent: Tuple[bytes, int]):
+def send_frame_wrapper(s: socket.socket , frame: bytes, current_id: List[int] , last_sent: List[bytes|int]):
     send_frame(s, frame, current_id[0])
-    last_sent = (frame, current_id)
+    last_sent = [frame, current_id]
     current_id[0] = int(not(bool(current_id[0])))

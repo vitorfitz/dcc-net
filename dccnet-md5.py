@@ -1,7 +1,6 @@
 from utils import *
 import sys
 import socket
-from threading import Thread, Lock
 
 arg_addr = sys.argv[1]
 arg_gas = sys.argv[2]
@@ -33,7 +32,7 @@ if res == END_FLAG:
     print("received END")
     exit(-1)
 
-last_sent = (None, None)
+last_sent = [None, None]
 
 run = True
 buff = ""
@@ -50,8 +49,7 @@ while run:
     if is_rst: break
 
     lines = frame_to_ascii(data)
-
-    ths: List[Thread] = []
+    
     for line in lines:
         l = buff + line
 
@@ -59,12 +57,6 @@ while run:
 
         frame = make_frame(l, current_id, is_end)
         
-        ths.append(Thread(target=send_frame_wrapper, args=(s, frame, [current_id], last_sent)))
-
-    for th in ths:
-        th.start()
-        
-    for th in ths:
-        th.join()
+        send_frame_wrapper(s, frame, [current_id], last_sent)
 
 s.close()
