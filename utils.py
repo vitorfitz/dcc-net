@@ -130,11 +130,10 @@ class DCCNETFrame:
 
 
 def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], last_sent: List[int], pq: Queue) -> None:
-    conn = conn.dup()
-    
     pq.put("started receiving")
     
     while True:
+        time.sleep(0.01)
         try:
             sync_recvd = conn.recv(SYNC_SIZE)
             
@@ -178,17 +177,17 @@ def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], l
             
         
 def sender(conn: socket.socket, fq: Queue, last_sent: List[int], rst: List[bool], pq: Queue) -> None:
-    conn = conn.dup()
-    
     pq.put("started sending")
     
     while True:
-        while last_sent != None: pass
+        while last_sent[0] != None: time.sleep(0.01)
         
         frame = fq.get()
         fid = frame.fid
         
         frame = frame.encode()
+        
+        pq.put(frame)
         
         attempts = 0
         last_sent[0] = fid
