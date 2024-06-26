@@ -26,14 +26,14 @@ try:
             print("Maximum frame size is 65535")
             exit(-1)
 
-        frame, check = write_frame(in_bytes, 0, True)
+        DCCNETFrame, check = write_frame(in_bytes, 0, True)
         # exit(0)
         attempts = 0
         data = None
 
         while attempts < 60 and data is None:
             try:
-                s.sendall(frame)
+                s.sendall(DCCNETFrame)
                 data = s.recv(HEADER_SIZE + SYNC_SIZE)
                 print("received ack " + str(len(data)))
             except socket.timeout:
@@ -49,8 +49,8 @@ try:
             print(f"Connected by {addr}")
             _, data = read_frame(conn)
             output.write(data)
-            frame, _ = write_frame(bytearray(), 0, True)
-            conn.sendall(frame)
+            DCCNETFrame, _ = write_frame(bytearray(), 0, True)
+            conn.sendall(DCCNETFrame)
 
 finally:
     s.close()
