@@ -1,6 +1,7 @@
 import struct
 import socket
 from queue import Queue
+import time
 from typing import List
 
 HEADER_SIZE = 7
@@ -128,10 +129,10 @@ class DCCNETFrame:
         return package
 
 
-def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], last_sent: List[int]) -> None:
+def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], last_sent: List[int], pq: Queue) -> None:
     conn = conn.dup()
     
-    print("started receiving")
+    pq.put("started receiving")
     
     while True:
         try:
@@ -158,12 +159,12 @@ def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], l
             is_end = (END_FLAG & flags_recvd) == END_FLAG
             is_rst = (RST_FLAG & flags_recvd) == RST_FLAG
 
-            print(f"data recvd:\t{data_recvd.decode('ASCII')}, flags:\t{bin(flags_recvd)}")
+            pq.put(f"data recvd:\t{data_recvd.decode('ASCII')}, flags:\t{bin(flags_recvd)}")
             
             end[0] = is_end
             rst[0] = is_rst
             
-            if rst[0]: continue
+            if rst[0]: return
             
             # if received a non ack frame, send an ack
             if not(is_ack):
@@ -176,12 +177,14 @@ def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], l
             continue
             
         
-def sender(conn: socket.socket, fq: Queue, last_sent: List[int], rst: List[bool]) -> None:
+def sender(conn: socket.socket, fq: Queue, last_sent: List[int], rst: List[bool], pq: Queue) -> None:
     conn = conn.dup()
     
-    print("started sending")
+    pq.put("started sending")
     
     while True:
+        while last_sent != None: pass
+        
         frame = fq.get()
         fid = frame.fid
         
@@ -198,4 +201,4 @@ def sender(conn: socket.socket, fq: Queue, last_sent: List[int], rst: List[bool]
         
         if attempts >= 16:
             rst = True
-        else: print("sent frame")
+        else: pq.put("sent frame")
