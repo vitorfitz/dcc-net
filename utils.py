@@ -133,7 +133,7 @@ def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], l
     pq.put("started receiving")
     
     while True:
-        time.sleep(0.01)
+        time.sleep(0.05)
         try:
             sync_recvd = conn.recv(SYNC_SIZE)
             
@@ -158,7 +158,6 @@ def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], l
             is_end = (END_FLAG & flags_recvd) == END_FLAG
             is_rst = (RST_FLAG & flags_recvd) == RST_FLAG
 
-            pq.put(f"data recvd:\t{data_recvd.decode('ASCII')}, flags:\t{bin(flags_recvd)}")
             
             end[0] = is_end
             rst[0] = is_rst
@@ -167,10 +166,12 @@ def receiver(conn: socket.socket, fq: Queue, rst: List[bool], end: List[bool], l
             
             # if received a non ack frame, send an ack
             if not(is_ack):
+                pq.put(f"data recvd:\t{data_recvd.decode('ASCII')}, flags:\t{hex(flags_recvd)}")
                 fq.put(DCCNETFrame("", id_recvd, True, False, False))
             
             if is_ack:
                 last_sent[0] = None
+                pq.put(f"ACK recvd for id = {id_recvd} {data_recvd.decode('ASCII')}")
         
         except:
             continue
@@ -180,7 +181,7 @@ def sender(conn: socket.socket, fq: Queue, last_sent: List[int], rst: List[bool]
     pq.put("started sending")
     
     while True:
-        while last_sent[0] != None: time.sleep(0.01)
+        # while last_sent[0] != None: time.sleep(0.01)
         
         frame = fq.get()
         fid = frame.fid
@@ -200,4 +201,4 @@ def sender(conn: socket.socket, fq: Queue, last_sent: List[int], rst: List[bool]
         
         if attempts >= 16:
             rst = True
-        else: pq.put("sent frame")
+        else: pq.put(f"sent frame: {frame}")
