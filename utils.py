@@ -210,9 +210,6 @@ def recv_frame(conn: socket.socket) -> bytes:
 		if check != expected_check:
 			raise Exception("Checksum does not match")
 
-		ack_frame = make_frame("", received_id, ACK_FLAG)
-		conn.sendall(ack_frame)
-
 		is_ack = False
 		is_end = False
 		is_rst = False
@@ -229,6 +226,10 @@ def recv_frame(conn: socket.socket) -> bytes:
 		if (flags & RST_FLAG) == RST_FLAG: print(f"RST", end="\t")
 		print()
 		print(f"data\t\t|{data.decode('ASCII')}\n")
+  
+		ack_frame = make_frame("", received_id, ACK_FLAG)
+		conn.sendall(ack_frame)
+		print(f"sent ack frame\t|{ack_frame}\n")
 
 		return data, is_ack, is_end, is_rst
 
