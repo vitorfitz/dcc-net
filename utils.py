@@ -1,3 +1,4 @@
+import hashlib
 import struct
 import socket
 import time
@@ -106,13 +107,15 @@ def read_frame(conn: socket.socket):
 def frame_to_ascii(bytes_data: bytes):
 	str_data = bytes_data.decode("ASCII")
 
-	lines = str_data.split("\n")
+	lines = []
 
-	for line in lines:
-		line += '\n'
+	line = ''
+	for i in range(len(str_data)):
+		line += str_data[i]
 
-	if str_data.endswith('\n'):
-		lines[-1] = lines[-1][:len(lines[-1]) - 1]
+		if str_data[i] == '\n' or i == len(str_data) - 1:
+			lines.append(line)
+			line = ''
 
 	return lines
 
@@ -140,6 +143,7 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 	while attemps < 16:
 		try:
 			conn.sendall(frame)
+			print(f"sent frame\t|{frame}")
 
 			frame_received = conn.recv(SYNC_SIZE+HEADER_SIZE)
 
@@ -174,7 +178,7 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 			if RST_FLAG & flags == RST_FLAG:
 				return RST_FLAG
 
-			if received_id == id_:
+			if received_id != id_:
 				time.sleep(1)
 
 			if ACK_FLAG & flags == ACK_FLAG:
@@ -212,16 +216,14 @@ def recv_frame(conn: socket.socket) -> bytes:
 		is_end = False
 		is_rst = False
 
-		if (flags & ACK_FLAG) >> 7: is_ack = True
-		if (flags & END_FLAG) >> 6: is_end = True
-		if (flags & RST_FLAG) >> 5: is_rst = True
+		if (flags & ACK_FLAG) == ACK_FLAG: is_ack = True
+		if (flags & END_FLAG) == END_FLAG: is_end = True
+		if (flags & RST_FLAG) == RST_FLAG: is_rst = True
+
+		if not(is_ack): print(f"received data\t|{data.decode("ASCII")}")
 
 		return data, is_ack, is_end, is_rst
 
-	except:
+	except Exception as e:
+		print(e)
 		return None, False, False, False
-
-def send_frame_wrapper(s: socket.socket , frame: bytes, current_id: List[int] , last_sent: List[bytes|int]):
-    send_frame(s, frame, current_id[0])
-    last_sent = [frame, current_id]
-    current_id[0] = int(not(bool(current_id[0])))

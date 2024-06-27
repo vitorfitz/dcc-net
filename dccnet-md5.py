@@ -32,8 +32,6 @@ if res == END_FLAG:
     print("received END")
     exit(-1)
 
-last_sent = [None, None]
-
 run = True
 buff = ""
 current_id = 1
@@ -52,11 +50,14 @@ while run:
     
     for line in lines:
         l = buff + line
-
-        is_end = int(line==lines[-1]) * END_FLAG
-
-        frame = make_frame(l, current_id, is_end)
         
-        send_frame_wrapper(s, frame, [current_id], last_sent)
+        chk = hashlib.md5(l[:-1].encode('ASCII')).hexdigest()+"\n"
+
+        frame = make_frame(chk, current_id, False)
+        
+        send_frame(s, frame, current_id)
+        
+        current_id = int(not(bool(current_id)))
+        print()
 
 s.close()
