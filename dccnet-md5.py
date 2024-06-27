@@ -21,8 +21,6 @@ msg = arg_gas + '\n'
 
 frame = make_frame(msg, 0, 0)
 
-print(f"sending GAS on frame:\t{frame}")
-
 res = send_frame(s, frame, 0)
 if res == RST_FLAG:
     print("received RST")

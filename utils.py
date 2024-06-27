@@ -143,7 +143,7 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 	while attemps < 16:
 		try:
 			conn.sendall(frame)
-			print(f"sent frame\t|{frame}")
+			print(f"sent frame\t|{frame}\n")
 
 			frame_received = conn.recv(SYNC_SIZE+HEADER_SIZE)
 
@@ -160,6 +160,7 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 
 			check = calculate_checksum(tmp_frame)
    
+			print(f"received frame")
 			print(f"checksum\t|{check} == {expected_check}")
 			print(f"flags", end="\t\t|")
 			if (flags & ACK_FLAG) >> 7: print(f"ACK", end="\t")
@@ -167,7 +168,7 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 			if (flags & RST_FLAG) >> 5: print(f"RST", end="\t")
 			print()
    
-			print(f"data\t\t|{data.decode('ASCII')}")
+			print(f"data\t\t|{data.decode('ASCII')}\n")
    
 			if check != expected_check:
 				time.sleep(1)
@@ -220,7 +221,14 @@ def recv_frame(conn: socket.socket) -> bytes:
 		if (flags & END_FLAG) == END_FLAG: is_end = True
 		if (flags & RST_FLAG) == RST_FLAG: is_rst = True
 
-		if not(is_ack): print(f"received data\t|{data.decode("ASCII")}")
+		print(f"received data")
+		print(f"checksum\t|{check} == {expected_check}")
+		print(f"flags", end="\t\t|")
+		if (flags & ACK_FLAG) == ACK_FLAG: print(f"ACK", end="\t")
+		if (flags & END_FLAG) == END_FLAG: print(f"END", end="\t")
+		if (flags & RST_FLAG) == RST_FLAG: print(f"RST", end="\t")
+		print()
+		print(f"data\t\t|{data.decode('ASCII')}\n")
 
 		return data, is_ack, is_end, is_rst
 
