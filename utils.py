@@ -153,7 +153,7 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int) -> int:
 				attemps += 1
 				continue
 
-			data = conn.recv(length)
+			data = conn.recv(length) #TODO: APARENTEMENTE SE RECEBER UMA MENSAGEM AQUI QUE NAO É ACK NEM END NEM RST, TEM QUE MANDAR ACK TAMBEM. ISSO OCORRE NO CASO DE RETRANSMISSAO
 
 			tmp_frame = bytearray(frame_received+data)
 			tmp_frame[SYNC_SIZE:SYNC_SIZE+2] = (0).to_bytes(2, 'big')
