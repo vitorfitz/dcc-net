@@ -47,7 +47,7 @@ try:
 
         with conn:
             print(f"Connected by {addr}")
-            _, data = read_frame(conn)
+            _, data, _ = read_frame(conn,conn.recv)
             output.write(data)
             frame, _ = write_frame(bytearray(), 0, True)
             conn.sendall(frame)

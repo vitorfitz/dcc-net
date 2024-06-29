@@ -11,6 +11,7 @@ if len(addr_str) != 2:
     exit(-1)
 
 s = socket.socket(get_ip_type(addr_str[0], addr_str[1]), socket.SOCK_STREAM)
+b = Buffer(s)
 
 s.settimeout(1)
 s.connect((addr_str[0], int(addr_str[1])))
@@ -21,7 +22,7 @@ msg = arg_gas + '\n'
 
 frame = make_frame(msg, 0, 0)
 
-res = send_frame(s, frame, 0)
+res = send_frame(s, frame, 0, b)
 if res == RST_FLAG:
     print("received RST")
     exit(-1)
@@ -34,10 +35,9 @@ run = True
 buff = ""
 current_id = 1
 while run:
-    data, is_ack, is_end, is_rst = recv_frame(s)
+    data, is_ack, is_end, is_rst = recv_frame(s, b)
     
     if data == None:
-        print(is_ack, is_end, is_rst)
         continue
 
     if is_ack: continue
@@ -53,7 +53,7 @@ while run:
 
         frame = make_frame(chk, current_id, False)
         
-        send_frame(s, frame, current_id)#AQUI ELE TA RETORNANDO UM TREM QUE NAO É ACK NO CASO DE RETRANSMISSÃO
+        send_frame(s, frame, current_id, b)#AQUI ELE TA RETORNANDO UM TREM QUE NAO É ACK NO CASO DE RETRANSMISSÃO
         '''received data
             checksum        |61163 == 61163
             flags           |
