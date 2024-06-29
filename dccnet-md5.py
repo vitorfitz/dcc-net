@@ -61,26 +61,6 @@ while run:
         frame = make_frame(chk, current_id, False)
 
         send_frame(s, frame, current_id, b)#AQUI ELE TA RETORNANDO UM TREM QUE NAO É ACK NO CASO DE RETRANSMISSÃO
-        '''received data
-            checksum        |61163 == 61163
-            flags           |
-            data            |entering phase 2 retransmission test
-
-
-            sent ack frame  |bytearray(b'\xdc\xc0#\xc2\xdc\xc0#\xc2~\xf8\x00\x00\x00\x01\x80')
-
-            sent frame      |bytearray(b'\xdc\xc0#\xc2\xdc\xc0#\xc24\xf3\x00!\x00\x00\x000e30c4436289108150c5679f4531ff30\n')
-
-            sent frame      |bytearray(b'\xdc\xc0#\xc2\xdc\xc0#\xc24\xf3\x00!\x00\x00\x000e30c4436289108150c5679f4531ff30\n')
-
-            received frame
-            checksum        |54972 == 54972
-            flags           |
-            data            |second message cannot be answered immediately due to missing ack
-            
-            ISSO NAO TA SENDO TRATADO NO CODIGO, E IMAGINO QUE TENHA Q MANDAR UM ACK NESSES CASOS.
-            '''
-
         current_id = int(not(bool(current_id)))
         print()
 
