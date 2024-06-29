@@ -152,11 +152,11 @@ def frame_to_ascii(bytes_data: bytes):
     for i in range(len(str_data)):
         line += str_data[i]
 
-        if str_data[i] == "\n" or i == len(str_data) - 1:
+        if str_data[i] == "\n":
             lines.append(line)
             line = ""
 
-    return lines
+    return lines,line
 
 def make_frame(data: str, id_: int, flags: int) -> bytearray:
     if len(data) >= MAX_FRAME_SIZE:
@@ -233,7 +233,6 @@ def recv_frame(conn: socket.socket, b: Buffer) -> bytes:
         except TimeoutError as e:
             if attempts==0: raise e
             attempts-=1
-            print("preciso de uma luz para me guiar " + str(attempts))
             continue
     check, length, received_id, flags = unpacked
 
@@ -265,7 +264,3 @@ def recv_frame(conn: socket.socket, b: Buffer) -> bytes:
     print(f"sent ack frame\t|{ack_frame}\n")
 
     return data, is_ack, is_end, is_rst
-
-    # except Exception as e:
-    #     print(e)
-    #     return None, False, False, False

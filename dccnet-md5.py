@@ -33,10 +33,12 @@ if res == END_FLAG:
 
 run = True
 buff = ""
+unresolved = ""
 current_id = 1
+
 while run:
     data, is_ack, is_end, is_rst = recv_frame(s, b)
-    
+
     if data == None:
         continue
 
@@ -44,15 +46,20 @@ while run:
     if is_end: run = False
     if is_rst: break
 
-    lines = frame_to_ascii(data)
-    
+    lines, ur2 = frame_to_ascii(data)
+    if len(lines)>0:
+        lines[0] = unresolved + lines[0]
+        unresolved = ur2
+    else:
+        unresolved = unresolved+ur2
+
     for line in lines:
         l = buff + line
-        
+
         chk = hashlib.md5(l[:-1].encode('ASCII')).hexdigest()+"\n"
 
         frame = make_frame(chk, current_id, False)
-        
+
         send_frame(s, frame, current_id, b)#AQUI ELE TA RETORNANDO UM TREM QUE NAO É ACK NO CASO DE RETRANSMISSÃO
         '''received data
             checksum        |61163 == 61163
@@ -73,7 +80,7 @@ while run:
             
             ISSO NAO TA SENDO TRATADO NO CODIGO, E IMAGINO QUE TENHA Q MANDAR UM ACK NESSES CASOS.
             '''
-        
+
         current_id = int(not(bool(current_id)))
         print()
 
