@@ -17,9 +17,10 @@ try:
             print("Client address format should be <address>:<port>")
             exit(-1)
 
-        s = socket.socket(get_ip_type(addr_str[0], addr_str[1]), socket.SOCK_STREAM)
+        oi = get_ip_type(addr_str[0], addr_str[1])
+        s = socket.socket(oi, socket.SOCK_STREAM)
 
-        s.settimeout(1)
+        s.settimeout(10000)
         s.connect((addr_str[0], int(addr_str[1])))
         in_bytes = bytearray(input_.read(MAX_FRAME_SIZE))
         if len(in_bytes) >= MAX_FRAME_SIZE:

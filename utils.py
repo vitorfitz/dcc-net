@@ -14,26 +14,30 @@ ACK_FLAG = 0x80
 END_FLAG = 0x40
 RST_FLAG = 0x20
 
+
 class Buffer:
-    def __init__(self,conn):
+    def __init__(self, conn):
         self.ba = bytearray()
-        self.pos=0
-        self.conn=conn
-    def recv(self,bytes):
-        avail=len(self.ba)-self.pos
-        if bytes>=avail:
-            msg=self.ba[self.pos:]
-            if bytes>avail:
-                msg+=self.conn.recv(bytes-avail)
-            self.pos=0
+        self.pos = 0
+        self.conn = conn
+
+    def recv(self, bytes):
+        avail = len(self.ba) - self.pos
+        if bytes >= avail:
+            msg = self.ba[self.pos :]
+            if bytes > avail:
+                msg += self.conn.recv(bytes - avail)
+            self.pos = 0
             self.ba = bytearray()
             return msg
         else:
             old_pos = self.pos
-            self.pos+=bytes
-            return self.ba[old_pos:self.pos]
-    def send(self,msg):
+            self.pos += bytes
+            return self.ba[old_pos : self.pos]
+
+    def send(self, msg):
         self.ba.extend(msg)
+
 
 def get_ip_type(hostname, port_):
     addr = socket.getaddrinfo(hostname, port_, 0, 0, socket.SOL_SOCKET)[0][4][0]
@@ -50,6 +54,7 @@ def get_ip_type(hostname, port_):
         pass
 
     return None
+
 
 def calculate_checksum(data):
     checksum = 0
@@ -83,11 +88,13 @@ def write_frame(data: bytes, id_: int, is_last: bool):
     frame[SYNC_SIZE : SYNC_SIZE + 2] = checksum.to_bytes(2, byteorder="big")
     return frame, checksum
 
+
 lastID = -1
 lastCHK = -1
 
+
 def read_frame(conn: socket.socket, recv):
-    global lastID,lastCHK
+    global lastID, lastCHK
     while True:
         read = bytearray(recv(SYNC_SIZE))
 
@@ -131,12 +138,12 @@ def read_frame(conn: socket.socket, recv):
             print("Checksum does not match\n")
             continue
 
-        if checksum==lastCHK and unpacked[2]==lastID:
+        if checksum == lastCHK and unpacked[2] == lastID:
             print("Duplicate frame\n")
             ack_frame = make_frame("", lastID, ACK_FLAG)
             conn.sendall(ack_frame)
             continue
-        lastCHK=checksum
+        lastCHK = checksum
         lastID = unpacked[2]
         frame[8:10] = checksum.to_bytes(2, byteorder="big")
 
@@ -156,7 +163,8 @@ def frame_to_ascii(bytes_data: bytes):
             lines.append(line)
             line = ""
 
-    return lines,line
+    return lines, line
+
 
 def make_frame(data: str, id_: int, flags: int) -> bytearray:
     if len(data) >= MAX_FRAME_SIZE:
@@ -185,9 +193,9 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int, b: Buffer) -> in
     while attemps < 16:
         try:
             conn.sendall(frame)
-            print(str(attemps)+f" sent frame\t|{frame}\n")
+            print(str(attemps) + f" sent frame\t|{frame}\n")
 
-            unpacked, data, frame2 = read_frame(conn,conn.recv)
+            unpacked, data, frame2 = read_frame(conn, conn.recv)
             check, length, received_id, flags = unpacked
 
             print(f"received frame")
@@ -209,10 +217,10 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int, b: Buffer) -> in
             if RST_FLAG & flags == RST_FLAG:
                 return RST_FLAG
 
-            if received_id != id_:
-                time.sleep(1)
-
             if ACK_FLAG & flags == ACK_FLAG:
+                if received_id != id_:
+                    attemps += 1
+                    continue
                 return ACK_FLAG
 
             b.send(frame2)
@@ -225,14 +233,15 @@ def send_frame(conn: socket.socket, frame: bytearray, id_: int, b: Buffer) -> in
 
 
 def recv_frame(conn: socket.socket, b: Buffer) -> bytes:
-    attempts=16
+    attempts = 16
     while True:
         try:
-            unpacked, data, _ = read_frame(conn,b.recv)
+            unpacked, data, _ = read_frame(conn, b.recv)
             break
         except TimeoutError as e:
-            if attempts==0: raise e
-            attempts-=1
+            if attempts == 0:
+                raise e
+            attempts -= 1
             continue
     check, length, received_id, flags = unpacked
 
